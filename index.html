@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Code IA — Criadora de Códigos, IAs e Jogos 3D</title>
+  <style>
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      margin: 0;
+      background: linear-gradient(to bottom right, #0b1220, #1e293b);
+      color: #f1f5f9;
+    }
+    header {
+      text-align: center;
+      background: rgba(255,255,255,0.05);
+      padding: 18px;
+      font-size: 20px;
+      font-weight: bold;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    main {
+      max-width: 900px;
+      margin: 30px auto;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    }
+    input, textarea {
+      width: 100%;
+      margin-top: 6px;
+      margin-bottom: 14px;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: monospace;
+      color: #f1f5f9;
+      background: rgba(255,255,255,0.1);
+    }
+    textarea { height: 180px; resize: vertical; }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 15px;
+      margin-right: 8px;
+    }
+    button:hover { background: #2563eb; }
+    pre {
+      background: rgba(0,0,0,0.4);
+      padding: 12px;
+      border-radius: 8px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+      color: #e2e8f0;
+    }
+    .status { font-size: 13px; margin-top: 6px; opacity: 0.8; }
+    footer {
+      text-align: center;
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <header>🚀 Code IA — Crie Códigos, IAs e Jogos 3D com uma só IA</header>
+
+  <main>
+    <label>🔑 OpenAI API Key (não é salva)</label>
+    <input id="apiKey" type="password" placeholder="sk-..." />
+
+    <label>💡 O que você quer criar?</label>
+    <textarea id="prompt" placeholder="Ex: um jogo 3D estilo GTA feito em Unity com sistema de IA de NPCs"></textarea>
+
+    <label>📦 Tipo de projeto</label>
+    <select id="projectType">
+      <option value="geral">Qualquer tipo</option>
+      <option value="ia">Inteligência Artificial</option>
+      <option value="jogo3d">Jogo 3D</option>
+      <option value="web">Aplicação Web</option>
+      <option value="github">Projeto para GitHub</option>
+    </select>
+
+    <button id="generateBtn">✨ Gerar Código e Ideias</button>
+    <button id="copyBtn">📋 Copiar</button>
+    <button id="downloadBtn">💾 Baixar</button>
+
+    <div class="status" id="status">Status: aguardando entrada...</div>
+
+    <pre id="output">A resposta aparecerá aqui...</pre>
+  </main>
+
+  <footer>Code IA — IA criativa para construir códigos, IAs e jogos com explicações e ideias.</footer>
+
+  <script>
+    const apiKeyInput = document.getElementById("apiKey");
+    const promptInput = document.getElementById("prompt");
+    const typeSelect = document.getElementById("projectType");
+    const output = document.getElementById("output");
+    const statusEl = document.getElementById("status");
+    const genBtn = document.getElementById("generateBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const dlBtn = document.getElementById("downloadBtn");
+
+    function setStatus(text) {
+      statusEl.textContent = "Status: " + text;
+    }
+
+    async function callOpenAI(apiKey, fullPrompt) {
+      const body = {
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `
+Você é Code IA — uma IA supercriativa e especializada em gerar **códigos completos, ideias e explicações**.
+Foque em:
+- Criar códigos funcionais e prontos para uso (HTML, JS, Python, Unity, Unreal, C#, etc.);
+- Explicar como o código funciona e como rodar;
+- Sugerir ideias extras, melhorias e integrações (ex: IA para NPCs, som, física realista, etc.);
+- Se for jogo 3D, inclua conceitos de gráficos, física, shaders e inteligência artificial.
+Não explique de forma genérica — ensine de forma técnica e direta, como um engenheiro experiente.
+`
+          },
+          { role: "user", content: fullPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 1500
+      };
+
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + apiKey
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error("Erro da API: " + res.status + " - " + text);
+      }
+
+      const data = await res.json();
+      return data.choices[0].message.content.trim();
+    }
+
+    genBtn.addEventListener("click", async () => {
+      const apiKey = apiKeyInput.value.trim();
+      const prompt = promptInput.value.trim();
+      const type = typeSelect.value;
+
+      if (!apiKey) return setStatus("Cole sua OpenAI API Key!");
+      if (!prompt) return setStatus("Digite o que deseja criar!");
+
+      const fullPrompt = `Tipo de projeto: ${type}.
+Descrição: ${prompt}.
+Gere um resultado completo, com código, ideias e explicações práticas.`;
+
+      setStatus("Gerando resposta...");
+      output.textContent = "⏳ Gerando...";
+
+      try {
+        const response = await callOpenAI(apiKey, fullPrompt);
+        output.textContent = response;
+        setStatus("Pronto ✅");
+      } catch (err) {
+        output.textContent = "❌ " + err.message;
+        setStatus("Erro ao gerar");
+      }
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(output.textContent);
+        setStatus("Copiado para área de transferência!");
+      } catch {
+        setStatus("Erro ao copiar");
+      }
+    });
+
+    dlBtn.addEventListener("click", () => {
+      const text = output.textContent;
+      if (!text.trim()) return setStatus("Nada para baixar!");
+      const blob = new Blob([text], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "code-ia-output.txt";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      setStatus("Arquivo baixado!");
+    });
+  </script>
+</body>
+</html>
